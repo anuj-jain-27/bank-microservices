@@ -1,0 +1,93 @@
+services:
+  configserver:
+    image: bank-microservices/configserver:latest
+    mem_limit: 700m
+    ports:
+      - "8084:8071"
+    networks:
+      - bank-microservices
+
+  eurekaserver:
+    image: bank-microservices/eurekaserver:latest
+    mem_limit: 700m
+    ports:
+      - "8085:9010"
+    depends_on:
+      - configserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 25s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+    networks:
+      - bank-microservices
+
+  accounts:
+    image: bank-microservices/accounts:latest
+    mem_limit: 700m
+    ports:
+      - "8080:8080"
+      - "8081:8080"
+    depends_on:
+      - configserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:9010/eureka/
+    networks:
+      - bank-microservices
+
+  cards:
+    image: bank-microservices/cards:latest
+    mem_limit: 700m
+    ports:
+      - "8082:9000"
+    depends_on:
+      - configserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:9010/eureka/
+    networks:
+      - bank-microservices
+
+  loans:
+    image: bank-microservices/loans:latest
+    mem_limit: 700m
+    ports:
+      - "8083:8090"
+    depends_on:
+      - configserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:9010/eureka/
+    networks:
+      - bank-microservices
+networks:
+  bank-microservices:
